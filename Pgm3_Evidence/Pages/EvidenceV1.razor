@@ -1,0 +1,73 @@
+﻿@page "/evidencev1"
+<PageTitle>Evidence</PageTitle>
+
+<h1>Evidence!</h1>
+
+<RadzenCard class="my-4">
+    <RadzenFormField Text="Datum:" Variant="Variant.Outlined">
+        <RadzenDatePicker @bind-Value="@Polozka.Datum" ShowCalendarWeek />
+    </RadzenFormField>
+    <RadzenFormField Text="Náklady:" Variant="Variant.Outlined">
+        <RadzenNumeric @bind-Value="@Polozka.Naklady" />
+    </RadzenFormField>
+    <RadzenFormField Text="Výnosy:" Variant="Variant.Outlined">
+        <RadzenNumeric @bind-Value="@Polozka.Vynosy" />
+    </RadzenFormField>
+
+    <RadzenButton class="mx-2" Shade="Shade.Dark" Click=@(args => Pridat()) Text="Přidat" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Large" />
+</RadzenCard>
+
+
+<RadzenTabs class="my-3">
+    <Tabs>
+        <RadzenTabsItem Text="Standardní tabulka">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Datum</th>
+                        <th>Náklady</th>
+                        <th>Výnosy</th>
+                        <th>Zisk</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Polozky)
+                    {
+                        <tr>
+                            <td>@item.Datum</td>
+                            <td>@item.Naklady</td>
+                            <td>@item.Vynosy</td>
+                            <td>@item.Zisk</td>
+                        </tr>
+                    }
+                   
+                </tbody>
+            </table>
+        </RadzenTabsItem>
+        <RadzenTabsItem Text="DataGrid">
+            <RadzenDataGrid @ref=RDataGrid AllowFiltering="true" AllowColumnResize="true" AllowAlternatingRows="true" FilterMode="FilterMode.Advanced" AllowSorting="true" PageSize="5" AllowPaging="true" PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="true"
+                            Data="@Polozky" ColumnWidth="140px" LogicalFilterOperator="LogicalFilterOperator.Or" SelectionMode="DataGridSelectionMode.Single">
+                <Columns>
+                    <RadzenDataGridColumn Property="Datum" Title="Datum" FormatString="{0:d}" Width="160px" />
+                    <RadzenDataGridColumn Property="Naklady" Title="Náklady" />
+                    <RadzenDataGridColumn Property="Vynosy" Title="Výnosy" />
+                    <RadzenDataGridColumn Property="Zisk" Title="Zisk" />
+
+                    @* <RadzenDataGridColumn Title="Photo" Frozen="true" Sortable="false" Filterable="false" Width="80px" TextAlign="TextAlign.Center">
+                        <Template Context="data">
+                            <RadzenImage Path="@data.Photo" class="rz-gravatar" AlternateText="@(data.FirstName + " " + data.LastName)" />
+                        </Template>
+                    </RadzenDataGridColumn> *@
+                   
+                </Columns>
+            </RadzenDataGrid>
+        </RadzenTabsItem>
+        <RadzenTabsItem Text="Order Details">
+            Order Details
+        </RadzenTabsItem>
+    </Tabs>
+</RadzenTabs>
+
+@code {
+    RadzenDataGrid<Models.Polozka> RDataGrid = new RadzenDataGrid<Models.Polozka>();
+}
