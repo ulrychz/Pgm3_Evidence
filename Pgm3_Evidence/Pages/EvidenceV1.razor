@@ -1,4 +1,5 @@
-﻿@page "/evidencev1"
+﻿@inject DialogService DialogService
+@page "/evidencev1"
 <PageTitle>Evidence</PageTitle>
 
 <h1>Evidence!</h1>
@@ -8,13 +9,20 @@
         <RadzenDatePicker @bind-Value="@Polozka.Datum" ShowCalendarWeek />
     </RadzenFormField>
     <RadzenFormField Text="Náklady:" Variant="Variant.Outlined">
-        <RadzenNumeric @bind-Value="@Polozka.Naklady" />
+        <RadzenNumeric @bind-Value="@Polozka.Naklady" Format="c"/>
     </RadzenFormField>
     <RadzenFormField Text="Výnosy:" Variant="Variant.Outlined">
-        <RadzenNumeric @bind-Value="@Polozka.Vynosy" />
+         <RadzenNumeric @bind-Value="@Polozka.Vynosy" Format="c" />
     </RadzenFormField>
-
-    <RadzenButton class="mx-2" Shade="Shade.Dark" Click=@(args => Pridat()) Text="Přidat" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Large" />
+    @if (IsEditace)
+    {
+        <RadzenButton class="mx-2" Shade="Shade.Dark" Click=@(args => UkociEditaci()) Text="Ukončit editaci" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Large" />
+    }
+    else
+    {
+        <RadzenButton class="mx-2" Shade="Shade.Dark" Click=@(args => Pridat()) Text="Přidat" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Large" />
+        
+    }
 </RadzenCard>
 
 
@@ -28,6 +36,8 @@
                         <th>Náklady</th>
                         <th>Výnosy</th>
                         <th>Zisk</th>
+                         <th>Smazat</th>
+                         <th>Edituj</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -35,9 +45,15 @@
                     {
                         <tr>
                             <td>@item.Datum</td>
-                            <td>@item.Naklady</td>
-                            <td>@item.Vynosy</td>
-                            <td>@item.Zisk</td>
+                            <td>@item.Naklady.ToString("C")</td>
+                            <td>@item.Vynosy.ToString("C1")</td>
+                            <td>@item.Zisk.ToString("C")</td>
+                            <td>
+                                <RadzenButton Click=@(args => SmazatZaznam(item)) Icon="delete_forever" ButtonStyle="ButtonStyle.Danger" />
+                            </td>
+                            <td>
+                                <RadzenButton Click=@(args => EditujZaznam(item)) Icon="delete_forever" ButtonStyle="ButtonStyle.Success" />
+                            </td>
                         </tr>
                     }
                    
@@ -49,9 +65,24 @@
                             Data="@Polozky" ColumnWidth="140px" LogicalFilterOperator="LogicalFilterOperator.Or" SelectionMode="DataGridSelectionMode.Single">
                 <Columns>
                     <RadzenDataGridColumn Property="Datum" Title="Datum" FormatString="{0:d}" Width="160px" />
-                    <RadzenDataGridColumn Property="Naklady" Title="Náklady" />
-                    <RadzenDataGridColumn Property="Vynosy" Title="Výnosy" />
-                    <RadzenDataGridColumn Property="Zisk" Title="Zisk" />
+                    <RadzenDataGridColumn Property="Naklady" Title="Náklady" FormatString="{0:C}" />
+                    <RadzenDataGridColumn Property="Vynosy" Title="Výnosy" FormatString="{0:C}" />
+                    <RadzenDataGridColumn Property="Zisk" Title="Zisk">
+                        <Template Context="data">
+                            @if (data.Zisk > 0)
+                            {
+                                <span style="color:darkgreen">@data.Zisk.ToString("C")</span>
+                            }
+                            else if(data.Zisk == 0)
+                            {
+                                <span style="color:black">@data.Zisk.ToString("C")</span>
+                            }
+                            else
+                            {
+                                <span style="color:red">@data.Zisk.ToString("C")</span>
+                            }
+                        </Template>
+                    </RadzenDataGridColumn>
 
                     @* <RadzenDataGridColumn Title="Photo" Frozen="true" Sortable="false" Filterable="false" Width="80px" TextAlign="TextAlign.Center">
                         <Template Context="data">
@@ -62,12 +93,78 @@
                 </Columns>
             </RadzenDataGrid>
         </RadzenTabsItem>
-        <RadzenTabsItem Text="Order Details">
-            Order Details
+        <RadzenTabsItem Text="Graf">
+            <div class="col-sm-12 my-5">
+                <RadzenCard class="w-100 mb-4" Style="display: flex; align-items: center; gap: 0.5rem">
+                    <RadzenCheckBox @bind-Value="@smooth" Name="smooth"></RadzenCheckBox>
+                    <RadzenLabel Text="Smooth" Component="smooth" Style="margin-right: 1rem;" />
+                    <RadzenCheckBox @bind-Value="@showDataLabels" Name="dataLabels"></RadzenCheckBox>
+                    <RadzenLabel Text="Show Data Labels" Component="dataLabels" Style="margin-right: 1rem;" />
+                    <RadzenCheckBox @bind-Value="@showMarkers" Name="markers"></RadzenCheckBox>
+                    <RadzenLabel Text="Show Markers" Component="markers" />
+                </RadzenCard>
+                <RadzenChart>
+                    <RadzenLineSeries Smooth="@smooth" Data="@PolozkySeskupene" CategoryProperty="Datum" Title="Náklady" LineType="LineType.Dashed" ValueProperty="Naklady">
+                        <RadzenMarkers Visible="@showMarkers" MarkerType="MarkerType.Square" />
+                        <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                    </RadzenLineSeries>
+                    <RadzenLineSeries Smooth="@smooth" Data="@PolozkySeskupene" CategoryProperty="Datum" Title="Výnosy" ValueProperty="Vynosy">
+                        <RadzenMarkers Visible="@showMarkers" MarkerType="MarkerType.Circle" />
+                        <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                    </RadzenLineSeries>
+                    <RadzenLineSeries Smooth="@smooth" Data="@PolozkySeskupene" CategoryProperty="Datum" Title="Zisk" ValueProperty="Zisk">
+                        <RadzenMarkers Visible="@showMarkers" MarkerType="MarkerType.Triangle" />
+                        <RadzenSeriesDataLabels Visible="@showDataLabels" />
+                    </RadzenLineSeries>
+                    <RadzenCategoryAxis Padding="20" >
+                        <RadzenAxisTitle Text="Měsíc"/>
+                    </RadzenCategoryAxis>
+                    <RadzenValueAxis FormatString="{0:C}">
+                        <RadzenGridLines Visible="true" />
+                        <RadzenAxisTitle Text="Finanční ukazatele" />
+                    </RadzenValueAxis>
+                </RadzenChart>
+            </div>
+            <RadzenDataGrid @ref=RDataGridGroup AllowFiltering="true" AllowColumnResize="true" AllowAlternatingRows="true" FilterMode="FilterMode.Advanced" AllowSorting="true" PageSize="5" AllowPaging="true" PagerHorizontalAlign="HorizontalAlign.Left" ShowPagingSummary="true"
+                            Data="@PolozkySeskupene" ColumnWidth="140px" LogicalFilterOperator="LogicalFilterOperator.Or" SelectionMode="DataGridSelectionMode.Single">
+                <Columns>
+                    <RadzenDataGridColumn Property="Datum" Title="Datum" FormatString="{0:d}" Width="160px" />
+                    <RadzenDataGridColumn Property="Naklady" Title="Náklady" FormatString="{0:C}" />
+                    <RadzenDataGridColumn Property="Vynosy" Title="Výnosy" FormatString="{0:C}" />
+                    <RadzenDataGridColumn Property="Zisk" Title="Zisk">
+                        <Template Context="data">
+                            @if (data.Zisk > 0)
+                            {
+                                <span style="color:darkgreen">@data.Zisk.ToString("C")</span>
+                            }
+                            else if (data.Zisk == 0)
+                            {
+                                <span style="color:black">@data.Zisk.ToString("C")</span>
+                            }
+                            else
+                            {
+                                <span style="color:red">@data.Zisk.ToString("C")</span>
+                            }
+                        </Template>
+                    </RadzenDataGridColumn>
+
+                    @* <RadzenDataGridColumn Title="Photo" Frozen="true" Sortable="false" Filterable="false" Width="80px" TextAlign="TextAlign.Center">
+                    <Template Context="data">
+                    <RadzenImage Path="@data.Photo" class="rz-gravatar" AlternateText="@(data.FirstName + " " + data.LastName)" />
+                    </Template>
+                    </RadzenDataGridColumn> *@
+
+                </Columns>
+            </RadzenDataGrid>
         </RadzenTabsItem>
     </Tabs>
 </RadzenTabs>
 
 @code {
     RadzenDataGrid<Models.Polozka> RDataGrid = new RadzenDataGrid<Models.Polozka>();
+    RadzenDataGrid<Models.Polozka> RDataGridGroup = new RadzenDataGrid<Models.Polozka>();
+
+    bool smooth = false;
+    bool showDataLabels = false;
+    bool showMarkers = true;
 }
